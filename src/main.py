@@ -201,8 +201,19 @@ def execute_notifiers(notifier_names, notifiers_cfg, context):
                 "color": color,
                 "text": message,
                 "footer": "Kube Event Collector",
-                "ts": context.get("event", {}).get("lastTimestamp")
             }
+
+            # 타임스탬프 정밀 변환 (ISO-8601 -> Unix Timestamp)
+            ts_str = context.get("event", {}).get("lastTimestamp")
+            if ts_str:
+                try:
+                    from datetime import datetime
+                    # Python 3.7+ fromisoformat 활용을 위해 Z를 +00:00으로 치환
+                    dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                    attachment["ts"] = int(dt.timestamp())
+                except Exception:
+                    pass
+
             if title:
                 attachment["title"] = title
                 
