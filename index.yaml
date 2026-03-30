@@ -1,0 +1,15 @@
+apiVersion: v1
+entries:
+  kube-event-collector:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-03-30T16:44:49.557406991Z"
+    description: A Kubernetes event watcher and multi-channel notifier based on OTel
+      pipeline architecture
+    digest: 02d0f11587ae81d7b7483ed1ee29ab7e1344b1c0390bc1c978fb833f7a394a25
+    name: kube-event-collector
+    type: application
+    urls:
+    - https://github.com/hyeon-wooo/kube-event-collector/releases/download/kube-event-collector-0.1.0/kube-event-collector-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-03-30T16:44:49.557413273Z"
