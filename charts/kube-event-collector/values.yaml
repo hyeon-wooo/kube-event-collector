@@ -1,6 +1,8 @@
 image:
   pullPolicy: IfNotPresent
 
+logLevel: INFO
+
 serviceAccount:
   create: true
 

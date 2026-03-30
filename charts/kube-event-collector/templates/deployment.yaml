@@ -23,6 +23,8 @@ spec:
           image: "bvv8808/kube-event-collector:{{ .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
+            - name: LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
 {{- if .Values.env }}
 {{ toYaml .Values.env | indent 12 }}
 {{- end }}
