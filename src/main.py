@@ -98,7 +98,6 @@ def execute_single_fetcher(f_name, f_cfg, context, core_v1, apps_v1):
     namespace = render_template(ns_tpl, context)
     
     resource_name_tpl = f_cfg.get("resource_name")
-    label_selector_tpl = f_cfg.get("label_selector")
     
     resource_name = render_template(resource_name_tpl, context) if resource_name_tpl else None
     
@@ -111,31 +110,14 @@ def execute_single_fetcher(f_name, f_cfg, context, core_v1, apps_v1):
         except Exception as e:
             logger.error(f"Failed to fetch Deployment {namespace}/{resource_name}: {e}")
             
-    elif resource == "Pod" and label_selector_tpl:
-        # Jinja가 Dictionary를 렌더링하면 파이썬 문자열 "{'app': 'foo'}" 형태가 될 수 있으므로, API용 포맷으로 파싱
-        label_selector = render_template(label_selector_tpl, context)
-        if label_selector.startswith('{') and label_selector.endswith('}'):
-            try:
-                ls_dict = ast.literal_eval(label_selector)
-                label_selector = ",".join([f"{k}={v}" for k, v in ls_dict.items()])
-            except Exception:
-                pass
-                
+    elif resource == "HorizontalPodAutoscaler" and resource_name:
         try:
-            resp = core_v1.list_namespaced_pod(namespace=namespace, label_selector=label_selector)
-            pods = client.ApiClient().sanitize_for_serialization(resp)
-            
-            aggregation = f_cfg.get("aggregation")
-            if aggregation == "count_by_node":
-                counts = {}
-                for pod in pods.get('items', []):
-                    node = pod.get('spec', {}).get('nodeName', 'Unknown')
-                    counts[node] = counts.get(node, 0) + 1
-                result = counts
-            else:
-                result = pods
+            autoscaling_v2 = client.AutoscalingV2Api()
+            resp = autoscaling_v2.read_namespaced_horizontal_pod_autoscaler(name=resource_name, namespace=namespace)
+            result = client.ApiClient().sanitize_for_serialization(resp)
         except Exception as e:
-            logger.error(f"Failed to fetch Pods: {e}")
+            logger.error(f"Failed to fetch HPA {namespace}/{resource_name}: {e}")
+    
 
     # 최종 결과물을 Context에 저장하여 후속 Fetcher나 Notifier가 쓸 수 있게 지정
     context[f_name] = result
