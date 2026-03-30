@@ -11,8 +11,8 @@ spec:
       targetRevision: "main"
       helm:
         valueFiles:
-          - $myconfig/cluster/app/event-collector/values.yaml
-    - repoURL: "git@github.com:hyeon-wooo/devdrill-gitops.git"
+          - $myconfig/values.yaml
+    - repoURL: "git@my-gitops-repo.git"
       targetRevision: HEAD
       ref: myconfig
   destination:

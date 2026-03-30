@@ -15,8 +15,6 @@
 2. **Fetchers (Processor)**: 이벤트와 관련된 리소스(Deployment, Pod 등)의 상세 상태 정보 수집 및 가공.
 3. **Notifiers (Exporter)**: 최종 정보를 렌더링하여 외부 플랫폼으로 발송.
 
----
-
 ## 퀵 스타트 (Helm 설치)
 
 ### 1. 설정 파일 준비 (`my-values.yaml`)
@@ -24,32 +22,17 @@
 `exmaple/values.yaml`을 참고하여 알림을 보낼 슬랙 정보와 룰을 작성합니다.
 
 ```yaml
-env:
-  - name: SLACK_WEBHOOK_URL
-    value: "https://hooks.slack.com/services/XXXX/YYYY"
+secretName: "slack-secret" # 수동으로 생성한 Secret 이름
 
 config:
   events:
-    hpa_scaling:
-      reason: "SuccessfulRescale"
-      kind: "HorizontalPodAutoscaler"
-
-  service:
-    pipelines:
-      my_alert:
-        events: ["hpa_scaling"]
-        notifiers: ["slack/alert"]
+    # ... 섹션별 설정 내용 ...
 ```
 
 ### 2. Helm을 통한 설치
 
-프로젝트 루트 디렉토리에서 다음 명령을 실행합니다.
-
 ```bash
-# 네임스페이스 생성
 kubectl create ns monitoring
-
-# 헬름 차트 설치
 helm upgrade --install kube-event-collector ./charts/kube-event-collector \
   -n monitoring \
   -f my-values.yaml
