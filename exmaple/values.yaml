@@ -19,7 +19,7 @@ config:
 
   notifiers:
     slack/alert-hpa:
-      webhook_url_env: SLACK_WEBHOOK_ALERT
+      webhook_url: $SLACK_WEBHOOK_ALERT
       template: |
         🚀 [HPA Scaling] 이벤트 발생: {{ event.involvedObject.name }}
         - 현재 파드 수: {{ target_deployment.spec.replicas }}

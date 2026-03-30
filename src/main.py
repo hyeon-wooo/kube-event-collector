@@ -153,14 +153,8 @@ def execute_fetchers(fetcher_names, fetchers_cfg, context):
 
 def resolve_config_value(cfg, key):
     """
-    설정 딕셔너리에서 값을 가져옵니다. 
-    1. '{key}_env' 속성이 선언되어 있다면 환경변수를 우선 참조합니다.
-    2. 값이 문자열이고 '$'로 시작하면 해당 이름의 환경변수 값으로 치환합니다.
+    값이 문자열이고 '$'로 시작하면 해당 이름의 환경변수 값으로 치환합니다.
     """
-    env_key = cfg.get(f"{key}_env")
-    if env_key and os.getenv(env_key):
-        return os.getenv(env_key)
-        
     val = cfg.get(key)
     if isinstance(val, str) and val.startswith("$"):
         env_val = os.getenv(val[1:])
