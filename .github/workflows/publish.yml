@@ -56,3 +56,19 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+      # 배포 성공 시 알림 (Slack Webhook)
+      - name: Notify Slack on Success
+        if: success()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"✅ *kube-event-collector* 배포 성공\n- 버전: \`${{ steps.get_version.outputs.VERSION }}\`\n- SHA: \`${{ github.sha }}\`\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      # 배포 실패 시 알림 (Slack Webhook)
+      - name: Notify Slack on Failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"❌ *kube-event-collector* 배포 실패\n- 버전: \`${{ steps.get_version.outputs.VERSION }}\`\n- 액션 링크: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
