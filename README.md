@@ -15,23 +15,52 @@
 2. **Fetchers (Processor)**: 이벤트와 관련된 리소스(Deployment, Pod 등)의 상세 상태 정보 수집 및 가공.
 3. **Notifiers (Exporter)**: 최종 정보를 렌더링하여 외부 플랫폼으로 발송.
 
----
+## 설치 및 배포
 
-## 설치
+본 프로젝트는 Helm Repository를 통해 편리하게 설치할 수 있습니다. 
 
-### 1. 설정 준비 (Values)
+### 1. Helm CLI를 이용한 직접 설치
 
-`exmaple/values.yaml`을 참고하여 알림을 보낼 슬랙 정보와 수집 규칙을 작성합니다.
-
-특히 `secretName`을 통해 슬랙 웹훅 URL이나 토큰이 저장된 Secret을 미리 생성해 두어야 합니다. (Helm 아티팩트 내에서 Secret을 직접 관리하기보다 외부에서 주입받는 것을 권장합니다.)
-
-### 2. Helm을 이용한 직접 설치
+가장 일반적인 설치 방법입니다. 아래 명령어로 깃허브 레포지토리를 직접 등록하고 설치할 수 있습니다.
 
 ```bash
+# 1. 레포지토리 등록 및 업데이트
+helm repo add kube-event-collector https://hyeon-wooo.github.io/kube-event-collector/
+helm repo update
+
+# 2. 설정 파일 준비 (exmaple/values.yaml 참고하여 my-values.yaml 작성)
+
+# 3. 차트 설치
 kubectl create ns monitoring
-helm upgrade --install kube-event-collector ./charts/kube-event-collector \
+helm upgrade --install kube-event-collector kube-event-collector/kube-event-collector \
   -n monitoring \
   -f my-values.yaml
+```
+
+### 2. GitOps를 이용한 설치 (ArgoCD)
+
+ArgoCD를 사용하는 경우, 소스 코드와 설정(Values)을 분리하여 관리하는 **Multiple Sources** 패턴을 권장합니다.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-event-collector
+spec:
+  sources:
+    # 1. 원본 차트 (GitHub 레포지토리를 Helm Repo로 직접 참조)
+    - repoURL: "https://hyeon-wooo.github.io/kube-event-collector/"
+      chart: "kube-event-collector"
+      targetRevision: "0.1.0" # Chart.yaml의 버전
+      helm:
+        valueFiles:
+          - $myconfig/values.yaml
+          
+    # 2. 사용자 설정 (개인 GitOps 레포지토리)
+    - repoURL: "git@github.com:my-org/my-gitops-repo.git"
+      targetRevision: HEAD
+      ref: myconfig
+  # ... (생략)
 ```
 
 ---
