@@ -22,8 +22,10 @@ jobs:
         id: get_version
         run: |
           VERSION=$(grep '^appVersion:' charts/kube-event-collector/Chart.yaml | awk '{print $2}' | tr -d '"')
+          CHART_VERSION=$(grep '^version:' charts/kube-event-collector/Chart.yaml | awk '{print $2}' | tr -d '"')
           echo "Building image version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -62,7 +64,7 @@ jobs:
         if: success()
         run: |
           curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\"✅ *kube-event-collector* 배포 성공\n- 버전: \`${{ steps.get_version.outputs.VERSION }}\`\n- SHA: \`${{ github.sha }}\`\"}" \
+          --data "{\"text\":\"✅ *kube-event-collector* 배포 성공\n- Chart Version: \`${{ steps.get_version.outputs.CHART_VERSION }}\`\n- App Version: \`${{ steps.get_version.outputs.VERSION }}\`\n- SHA: \`${{ github.sha }}\`\"}" \
           ${{ secrets.SLACK_WEBHOOK_URL }}
 
       # 배포 실패 시 알림 (Slack Webhook)
