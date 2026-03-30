@@ -6,6 +6,7 @@ metadata:
   labels:
     app: {{ .Chart.Name }}
 data:
-  # python 코드 내에서 safe_load(cm.data["config.yaml"])로 활용됨
-  config.yaml: |
-{{ toYaml .Values.config | indent 4 }}
+{{- range $key, $value := .Values.config }}
+  {{ $key }}: |
+{{ toYaml $value | indent 4 }}
+{{- end }}

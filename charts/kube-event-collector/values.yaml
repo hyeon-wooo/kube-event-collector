@@ -4,8 +4,11 @@ image:
 serviceAccount:
   create: true
 
-# 환경변수로 주입할 Secret이나 설정값들 (Slack Token 등)
+# 외부에서 수동으로 생성한 Secret 이름
+secretName: ""
+
+# 환경변수로 직접 주입할 설정값들
 env: {}
 
-# 컨트롤러 파이프라인 엔진 설정 (파이썬에서 Parsing)
+# 컨트롤러 파이프라인 엔진 설정 (ConfigMap의 Data로 직접 들어감)
 config: {}

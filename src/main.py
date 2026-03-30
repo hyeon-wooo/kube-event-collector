@@ -45,8 +45,14 @@ def load_config_from_kube(name, namespace):
             logger.warning(f"ConfigMap '{namespace}/{name}' is empty.")
             return {}
             
-        if cm.data:
-            cfg = yaml.safe_load(cm.data)
+        cfg = {}
+        for k, v in cm.data.items():
+            try:
+                parsed_val = yaml.safe_load(v)
+                cfg[k] = parsed_val
+            except Exception as parse_err:
+                logger.warning(f"Failed to parse key '{k}' in ConfigMap: {parse_err}")
+                cfg[k] = v
                     
         logger.info(f"Successfully loaded config from ConfigMap '{namespace}/{name}'")
         return cfg
