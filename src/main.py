@@ -185,18 +185,56 @@ def execute_notifiers(notifier_names, notifiers_cfg, context):
             token = resolve_config_value(n_cfg, "token")
             channel = resolve_config_value(n_cfg, "channel")
             
+            # 사용자 정의 필드 렌더링
+            title = render_template(n_cfg.get("title") or n_cfg.get("subject"), context)
+            color = render_template(n_cfg.get("color"), context)
+            
+            # 색상 기본값 처리 (이벤트 타입 기반)
+            if not color:
+                ev_type = context.get("event", {}).get("type", "Normal")
+                color = "#36a64f" if ev_type == "Normal" else "#f2c744" 
+            
+            message = render_template(n_cfg.get("message"), context)
+            
+            # Slack Attachment 기반 페이로드 구성
+            attachment = {
+                "color": color,
+                "text": message,
+                "footer": "Kube Event Collector",
+                "ts": context.get("event", {}).get("lastTimestamp")
+            }
+            if title:
+                attachment["title"] = title
+                
+            payload = {"attachments": [attachment]}
+            
             if webhook_url:
-                requests.post(webhook_url, json={"text": message})
-                logger.info("             -> Sent via Slack Webhook")
+                requests.post(webhook_url, json=payload)
+                logger.info("             -> Sent via Slack Webhook (Rich)")
             elif token and channel:
+                payload["channel"] = channel
                 requests.post(
                     "https://slack.com/api/chat.postMessage", 
                     headers={"Authorization": f"Bearer {token}"},
-                    json={"channel": channel, "text": message}
+                    json=payload
                 )
-                logger.info("             -> Sent via Slack API (Token)")
+                logger.info("             -> Sent via Slack API (Token, Rich)")
             else:
                 logger.error(f"Slack notifier '{n_name}' needs either 'webhook_url' OR ('token' AND 'channel').")
+        
+        elif n_type == 'http':
+            endpoint = resolve_config_value(n_cfg, "endpoint")
+            authorization = resolve_config_value(n_cfg, "authorization")
+            body = render_template(n_cfg.get('body'), context)
+            requests.post(
+                endpoint, 
+                headers={"Authorization": authorization or ''},
+                json=body
+            )
+            logger.info("             -> Sent via HTTP")
+        else:
+            logger.warning(f"Unknown notifier type: {n_type}")
+
 
 def watch_events(cfg):
     events_cfg = cfg.get("events", {})

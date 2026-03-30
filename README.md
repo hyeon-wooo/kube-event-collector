@@ -15,21 +15,17 @@
 2. **Fetchers (Processor)**: 이벤트와 관련된 리소스(Deployment, Pod 등)의 상세 상태 정보 수집 및 가공.
 3. **Notifiers (Exporter)**: 최종 정보를 렌더링하여 외부 플랫폼으로 발송.
 
-## 퀵 스타트 (Helm 설치)
+---
 
-### 1. 설정 파일 준비 (`my-values.yaml`)
+## 설치
 
-`exmaple/values.yaml`을 참고하여 알림을 보낼 슬랙 정보와 룰을 작성합니다.
+### 1. 설정 준비 (Values)
 
-```yaml
-secretName: "slack-secret" # 수동으로 생성한 Secret 이름
+`exmaple/values.yaml`을 참고하여 알림을 보낼 슬랙 정보와 수집 규칙을 작성합니다.
 
-config:
-  events:
-    # ... 섹션별 설정 내용 ...
-```
+특히 `secretName`을 통해 슬랙 웹훅 URL이나 토큰이 저장된 Secret을 미리 생성해 두어야 합니다. (Helm 아티팩트 내에서 Secret을 직접 관리하기보다 외부에서 주입받는 것을 권장합니다.)
 
-### 2. Helm을 통한 설치
+### 2. Helm을 이용한 직접 설치
 
 ```bash
 kubectl create ns monitoring
@@ -44,17 +40,17 @@ helm upgrade --install kube-event-collector ./charts/kube-event-collector \
 
 모든 파이프라인 단계는 **Jinja2** 템플릿 엔진을 사용하여 동적인 설정을 지원합니다. `fetchers`의 설정이나 `notifiers`의 메시지 템플릿에서 `{{ }}` 문법으로 Context 데이터를 참조할 수 있습니다.
 
-### 1. `event` 객체 (기본 제공)
+### 1. `event` 객체
 
 파이프라인이 시작될 때, 트리거된 Kubernetes Event 객체가 `event`라는 이름으로 Context에 자동 주입됩니다.
 
-| 주요 필드 | 설명 | 예시 |
-| :--- | :--- | :--- |
-| `event.reason` | 이벤트 발생 이유 | `SuccessfulRescale`, `BackOff` |
-| `event.message` | 상세 메시지 | `New size: 4; reason: cpu resource...` |
-| `event.type` | 이벤트 유형 | `Normal`, `Warning` |
-| `event.involvedObject` | 관련 리소스 정보 | `name`, `namespace`, `kind` 등 포함 |
-| `event.lastTimestamp` | 마지막 발생 시간 | `2023-10-27T10:00:00Z` |
+| 주요 필드              | 설명             | 예시                                   |
+| :--------------------- | :--------------- | :------------------------------------- |
+| `event.reason`         | 이벤트 발생 이유 | `SuccessfulRescale`, `BackOff`         |
+| `event.message`        | 상세 메시지      | `New size: 4; reason: cpu resource...` |
+| `event.type`           | 이벤트 유형      | `Normal`, `Warning`                    |
+| `event.involvedObject` | 관련 리소스 정보 | `name`, `namespace`, `kind` 등 포함    |
+| `event.lastTimestamp`  | 마지막 발생 시간 | `2023-10-27T10:00:00Z`                 |
 
 **예시:** `{{ event.involvedObject.name }}` -> 이벤트가 발생한 리소스의 이름
 
@@ -76,7 +72,7 @@ config:
       resource: HorizontalPodAutoscaler
       namespace: "{{ event.involvedObject.namespace }}"
       resource_name: "{{ event.involvedObject.name }}"
-    
+
     # 2. HPA 정보로부터 Deployment 이름을 동적으로 추출하여 수집
     target_deployment:
       depends_on: ["hpa_info"] # hpa_info가 먼저 실행되도록 보장
@@ -84,16 +80,43 @@ config:
       namespace: "{{ event.involvedObject.namespace }}"
       # 'hpa_info'의 spec.scaleTargetRef.name 필드 참조
       resource_name: "{{ hpa_info.spec.scaleTargetRef.name }}"
-  
+
   notifiers:
     slack/alert:
+      title: "알림: {{ event.involvedObject.name }} - {{ event.reason }}"
+      color: "#36a64f"
       template: |
-        🚀 [HPA Scaling] {{ event.involvedObject.name }} 리소스에서 {{ event.reason }} 발생!
-        - 대상 Deployment: {{ hpa_info.spec.scaleTargetRef.name }}
-        - 현재 Deployment 복제본 수: {{ target_deployment.spec.replicas }}
+        대상 리소스에서 {{ event.reason }} 이벤트가 발생했습니다.
+        현재 Deployment의 원하는 복제본 수: {{ target_deployment.spec.replicas }}
 ```
 
-### 3. Context 데이터 확인 팁
+### 3. Notifier 타입별 설정
+
+#### Slack Notifier
+
+Slack은 단순 텍스트 외에 풍부한 레이아웃(Rich Layout)을 위한 전용 필드를 지원합니다.
+
+| 필드                   | 설명                               | 기본값                                |
+| :--------------------- | :--------------------------------- | :------------------------------------ |
+| `webhook_url`          | Slack Incoming Webhook URL         | (없음)                                |
+| `token`                | Slack API 사용을 위한 Bot Token    | (없음)                                |
+| `channel`              | 알림을 보낼 슬랙 채널 ID 또는 이름 | (없음)                                |
+| `title` 또는 `subject` | 메시지 상단 제목 (Jinja2 지원)     | (없음)                                |
+| `color`                | 왼쪽 사이드 바 색상 (Hex)          | Normal: `#36a64f`, Warning: `#f2c744` |
+| `message`              | 메시지 본문 (Jinja2 지원)          | (필수)                                |
+
+> `token`과 `channel` 두 필드를 입력하거나, `webhook_url` 필드만 입력합니다.  
+> `webhook_url`이 지정된 경우 `token`과 `channel`은 무시됩니다.
+
+#### HTTP Notifier
+
+일반적인 Webhook 연동이나 외부 API 호출을 위해 사용합니다.
+
+- `endpoint`: 호출할 URL (환경변수 지원)
+- `authorization`: 헤더에 담길 인증 토큰으로, 인증 방식(Basic, Bearer 등)을 포함한 헤더 전체를 입력합니다.
+- `body`: 전송할 JSON 바디
+
+### 4. Context 데이터 확인 팁
 
 - `event` 객체는 [Kubernetes Event API V1](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#event-v1-core) 구조를 따릅니다.
 - Fetcher로 수집된 데이터(`Deployment`, `Pod` 등) 역시 각 리소스의 표준 API 구조를 유지합니다.

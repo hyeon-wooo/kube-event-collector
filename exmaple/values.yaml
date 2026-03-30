@@ -20,9 +20,10 @@ config:
   notifiers:
     slack/alert-hpa:
       webhook_url: $SLACK_WEBHOOK_ALERT
-      template: |
-        🚀 [HPA Scaling] 이벤트 발생: {{ event.involvedObject.name }}
+      title: "🚀 [HPA Scaling] 이벤트 발생: {{ event.involvedObject.name }}"
+      message: |
         - 현재 파드 수: {{ target_deployment.spec.replicas }}
+      color: "#0077cc"
 
   service:
     pipelines:
