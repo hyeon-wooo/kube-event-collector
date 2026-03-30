@@ -1,0 +1,11 @@
+image:
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+
+# 환경변수로 주입할 Secret이나 설정값들 (Slack Token 등)
+env: {}
+
+# 컨트롤러 파이프라인 엔진 설정 (파이썬에서 Parsing)
+config: {}

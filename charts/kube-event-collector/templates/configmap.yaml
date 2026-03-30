@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # 파이썬 코드상에서 이 이름을 고정으로 탐색하도록 되어있음
+  name: kube-event-collector-cm
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  # python 코드 내에서 safe_load(cm.data["config.yaml"])로 활용됨
+  config.yaml: |
+{{ toYaml .Values.config | indent 4 }}

@@ -1,0 +1,50 @@
+image:
+  tag: 0.0.1
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  # 지정하지 않으면 Chart 이름(kube-event-collector)을 기본으로 사용합니다.
+  name: ""
+
+# 환경변수로 주입할 Secret이나 설정값들 (Slack Token 등)
+env:
+  - name: SLACK_WEBHOOK_URL
+    value: ""
+  - name: SLACK_BOT_TOKEN
+    value: ""
+  - name: SLACK_CHANNEL_ID
+    value: ""
+
+# 컨트롤러 파이프라인 엔진 설정 (파이썬에서 Parsing)
+config:
+  events:
+    hpa_scaling:
+      type: "Normal"
+      reason: "SuccessfulRescale"
+      kind: "HorizontalPodAutoscaler"
+    pod_crash:
+      type: "Warning"
+      reason: "BackOff"
+      kind: "Pod"
+
+  fetchers:
+    target_deployment:
+      resource: "Deployment"
+      namespace: "{{ event.involvedObject.namespace }}"
+      resource_name: "{{ event.involvedObject.name }}"
+
+  notifiers:
+    slack/alert:
+      webhook_url_env: "SLACK_WEBHOOK_URL"
+      template: |
+        🚀 [{{ event.involvedObject.namespace }}] 이벤트 발생: {{ event.involvedObject.name }}
+        - 원인: {{ event.reason }} ({{ event.type }})
+        - 관련 메세지: {{ event.message }}
+
+  service:
+    pipelines:
+      default_alert_pipeline:
+        events: ["hpa_scaling", "pod_crash"]
+        fetchers: ["target_deployment", "pod_distribution"]
+        notifiers: ["slack/alert"]

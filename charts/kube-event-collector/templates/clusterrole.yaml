@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Chart.Name }}-role
+rules:
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["", "apps", "autoscaling"]
+    # 모든 종류의 Fetcher 동작을 대응하기 위해 기본적인 주요 리소스의 읽기 권한을 부여함
+    resources: ["pods", "deployments", "replicasets", "statefulsets", "horizontalpodautoscalers", "configmaps", "services", "ingresses"]
+    verbs: ["get", "list", "watch"]

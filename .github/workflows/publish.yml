@@ -18,10 +18,10 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v6
 
-      - name: Read Version from VERSION file
+      - name: Read Version from Chart.yaml
         id: get_version
         run: |
-          VERSION=$(cat VERSION | tr -d '\n' | xargs)
+          VERSION=$(grep '^appVersion:' charts/kube-event-collector/Chart.yaml | awk '{print $2}' | tr -d '"')
           echo "Building image version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
@@ -51,7 +51,7 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64 # 두 아키텍처 지원 권장
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
