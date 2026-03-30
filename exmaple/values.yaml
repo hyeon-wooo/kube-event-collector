@@ -1,5 +1,5 @@
 image:
-  tag: 0.0.1
+  tag: 0.1.0
   pullPolicy: IfNotPresent
 
 serviceAccount:
