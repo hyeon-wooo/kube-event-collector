@@ -15,6 +15,9 @@
 2. **Fetchers (Processor)**: 이벤트와 관련된 리소스(Deployment, Pod 등)의 상세 상태 정보 수집 및 가공.
 3. **Notifiers (Exporter)**: 최종 정보를 렌더링하여 외부 플랫폼으로 발송.
 
+![architecture](https://github.com/user-attachments/assets/ff0a6b15-b927-43c6-b9bd-ab17c4b0cb97)
+
+
 ## 설치 및 배포
 
 본 프로젝트는 Helm Repository를 통해 편리하게 설치할 수 있습니다. 
